@@ -48,45 +48,81 @@ class MiniTree(mn.VGroup):
         self.add(*arrows)
 
 
-def calculate_scale_ratio(group, camera):
-    """Calculate the scale ratio for the group without rearranging elements."""
-    current_width = group.width
-    current_height = group.height
+def calculate_scale_ratio(groups, camera, horizontal_buff=1, margin=0.9):
+    """
+    Calculate the scale ratio for multiple groups arranged horizontally.
 
-    width_scale = (
-        (camera.frame_width * 0.9) / current_width
-        if current_width > camera.frame_width * 0.9
-        else 1
-    )
-    height_scale = (
-        (camera.frame_height * 0.9) / current_height
-        if current_height > camera.frame_height * 0.9
-        else 1
-    )
+    Args:
+    groups (list): List of VGroup objects to be scaled and arranged.
+    camera: The camera object of the scene.
+    horizontal_buff (float): Buffer space between groups.
+    margin (float): Margin factor for the camera frame (0.9 means 90% of the frame will be used).
 
-    return min(width_scale, height_scale)
+    Returns:
+    tuple: (scale_factor, arranged_group)
+    """
+    combined_group = mn.Group(*groups)
+    combined_group.arrange(mn.RIGHT, buff=horizontal_buff)
+
+    width_scale = (camera.frame_width * margin) / combined_group.width
+    height_scale = (camera.frame_height * margin) / combined_group.height
+    scale_factor = min(width_scale, height_scale)
+
+    return scale_factor, combined_group
 
 
 class RandomForestScene(mn.Scene):
     def construct(self):
         self.camera.background_color = mn.BLUE_E
 
-        decision_settings = {
+        # Create two sets of settings for two different trees
+        decision_settings1 = {
             "Condition 1": mn.LIGHT_GRAY,
         }
-        output_settings = {
+        output_settings1 = {
             "Output 1": mn.RED,
             "Output 2": mn.GREEN,
         }
 
-        forest = MiniTree(decision_settings, output_settings)
-        scale_factor = calculate_scale_ratio(forest, self.camera)
-        forest.scale(scale_factor)
+        decision_settings2 = {
+            "Condition 2": mn.YELLOW_E,
+        }
+        output_settings2 = {
+            "Output 3": mn.BLUE,
+            "Output 4": mn.PURPLE,
+        }
 
-        # Center the forest in the scene
-        forest.move_to(self.camera.frame_center)
+        # Create two forests
+        forest1 = MiniTree(decision_settings1, output_settings1)
+        forest2 = MiniTree(decision_settings2, output_settings2)
 
-        self.play(mn.FadeIn(forest))
+        # Calculate scale factor and get the arranged group
+        scale_factor, arranged_group = calculate_scale_ratio(
+            [forest1, forest2], self.camera
+        )
+
+        # Apply scaling to the arranged group
+        arranged_group.scale(scale_factor)
+
+        # Center the arranged group in the scene
+        arranged_group.move_to(self.camera.frame_center)
+
+        # Animate the appearance of both forests in parallel
+        self.play(
+            mn.AnimationGroup(mn.FadeIn(forest1), mn.FadeIn(forest2), lag_ratio=0.2)
+        )
+        self.wait(2)
+
+        # Example animations to demonstrate the trees working in parallel
+        self.play(
+            forest1.decision_blocks[0].animate.set_fill(mn.YELLOW),
+            forest2.decision_blocks[0].animate.set_fill(mn.GREEN),
+        )
+        self.wait(1)
+        self.play(
+            forest1.output_blocks[0].animate.scale(1.2),
+            forest2.output_blocks[1].animate.scale(1.2),
+        )
         self.wait(2)
 
 
