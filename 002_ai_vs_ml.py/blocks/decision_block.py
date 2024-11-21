@@ -3,11 +3,12 @@ import numpy as np
 
 
 class DecisionBlock(mn.VGroup):
-    def __init__(self, decision_text: str, **kwargs):
+
+    def __init__(self, decision_text: str, fill_color, **kwargs):
         super().__init__(**kwargs)
         decision_box = mn.Square(
             side_length=2,
-            fill_color=mn.LIGHT_GREY,
+            fill_color=fill_color,
             fill_opacity=1,
             stroke_color=mn.BLACK,
         ).rotate(mn.PI / 4)

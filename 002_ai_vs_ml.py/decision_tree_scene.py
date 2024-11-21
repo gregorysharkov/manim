@@ -1,7 +1,7 @@
 import manim as mn
 import numpy as np
 
-from blocks import InputBlock, OutputBlock, DecisionBlock
+from blocks import InputBlock, OutputBlock, DecisionBlock, create_elbow_arrow
 
 
 class DecisionTree(mn.Scene):
@@ -11,9 +11,9 @@ class DecisionTree(mn.Scene):
         # Create elements
         new_input_block = InputBlock("New Input", fill_color=mn.ORANGE)
         input_block = InputBlock("Input")
-        decision_block1 = DecisionBlock("Condition 1")
-        decision_block2 = DecisionBlock("Condition 2")
-        decision_block3 = DecisionBlock("Condition 3")
+        decision_block1 = DecisionBlock("Condition 1", mn.LIGHT_GREY)
+        decision_block2 = DecisionBlock("Condition 2", mn.LIGHT_GREY)
+        decision_block3 = DecisionBlock("Condition 3", mn.LIGHT_GREY)
 
         output_block1 = OutputBlock("Output 1", fill_color=mn.RED)
         output_block2 = OutputBlock("Output 2", fill_color=mn.GREEN)
@@ -121,31 +121,6 @@ class DecisionTree(mn.Scene):
         self.wait(1)
         self.play(output_block3.animate.scale(1.5))
         self.wait(2)
-
-
-# Create arrows
-def create_elbow_arrow(start, end, angle=mn.TAU / 4):
-    midpoint = (start + end) / 2
-    control_point = midpoint + np.array([np.cos(angle), np.sin(angle), 0]) * 0.5
-
-    path = mn.CubicBezier(start, start, control_point, end)
-
-    # Create the arrow tip
-    tip = (
-        mn.ArrowTriangleTip()
-        .scale(0.2)  # Increased scale for better visibility
-        .set_color(mn.WHITE)  # Set color to make it more visible
-    )
-
-    # Create the arrow
-    arrow = mn.VGroup(
-        path,
-        tip.move_to(
-            path.get_end(), aligned_edge=path.get_end() - path.get_last_point()
-        ),
-    )
-
-    return arrow
 
 
 if __name__ == "__main__":
