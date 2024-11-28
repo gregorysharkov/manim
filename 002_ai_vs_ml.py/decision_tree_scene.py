@@ -9,15 +9,15 @@ class DecisionTree(mn.Scene):
         self.camera.background_color = mn.BLUE_E
 
         # Create elements
-        new_input_block = InputBlock("New Input", fill_color=mn.ORANGE)
-        input_block = InputBlock("Input")
-        decision_block1 = DecisionBlock("Condition 1", mn.LIGHT_GREY)
-        decision_block2 = DecisionBlock("Condition 2", mn.LIGHT_GREY)
-        decision_block3 = DecisionBlock("Condition 3", mn.LIGHT_GREY)
+        new_input_block = InputBlock("New Fruit", fill_color=mn.YELLOW)
+        input_block = InputBlock("Fruit")
+        decision_block1 = DecisionBlock("Is it soft?", mn.LIGHT_GREY)
+        decision_block2 = DecisionBlock("Is it sweet?", mn.LIGHT_GREY)
+        decision_block3 = DecisionBlock("Is it sour?", mn.LIGHT_GREY)
 
-        output_block1 = OutputBlock("Output 1", fill_color=mn.RED)
-        output_block2 = OutputBlock("Output 2", fill_color=mn.GREEN)
-        output_block3 = OutputBlock("Output 3", fill_color=mn.ORANGE)
+        output_block1 = OutputBlock("Ripe", fill_color=mn.RED)
+        output_block2 = OutputBlock("Perfect", fill_color=mn.GREEN)
+        output_block3 = OutputBlock("Unripe", fill_color=mn.ORANGE)
 
         # Scale down elements if they're too large
         all_elements = mn.VGroup(
