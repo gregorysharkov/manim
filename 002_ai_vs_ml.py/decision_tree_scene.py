@@ -1,5 +1,4 @@
 import manim as mn
-import numpy as np
 
 from blocks import InputBlock, OutputBlock, DecisionBlock, create_elbow_arrow
 
