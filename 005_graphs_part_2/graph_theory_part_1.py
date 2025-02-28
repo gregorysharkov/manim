@@ -3,6 +3,28 @@ import numpy as np
 
 
 class AdjacencyMatrix(mn.Scene):
+
+    def setup(self):
+        self.camera.background_color = mn.DARK_BLUE
+
+        # Create the grid
+        grid = mn.VGroup()
+        for i in range(-10, 11):
+            h_line = mn.Line(
+                start=mn.LEFT * 10 + mn.UP * i,
+                end=mn.RIGHT * 10 + mn.UP * i,
+                stroke_width=0.5,
+                color=mn.LIGHT_GREY,
+            ).set_opacity(0.5)
+            v_line = mn.Line(
+                start=mn.LEFT * i + mn.UP * 10,
+                end=mn.LEFT * i + mn.DOWN * 10,
+                stroke_width=0.5,
+                color=mn.LIGHT_GREY,
+            ).set_opacity(0.5)
+            grid.add(h_line, v_line)
+        self.add(grid)
+
     def construct(self):
         # Create a simple undirected graph
         graph = mn.Graph(
@@ -12,6 +34,7 @@ class AdjacencyMatrix(mn.Scene):
             layout={"0": mn.LEFT * 2, "1": mn.ORIGIN, "2": mn.RIGHT * 2},
             vertex_config={"fill_color": mn.GREEN, "stroke_color": mn.BLACK},
         ).scale(0.8)
+        graph_label = mn.MathTex("Graph (G)").next_to(graph, mn.UP, buff=0.5)
 
         # Create adjacency matrix (3x3 grid)
         matrix = [
@@ -29,17 +52,20 @@ class AdjacencyMatrix(mn.Scene):
         )
 
         # Create labels
-        graph_label = mn.Text("Graph (G)").next_to(graph, mn.UP, buff=0.5)
-        matrix_label = mn.Text("Adjacency Matrix (A)").next_to(
+        adjacency_matrix_label = mn.MathTex("Adjacency Matrix (A)").next_to(
             adjacency_matrix, mn.UP, buff=0.5
         )
 
         # Group graph and table
-        graph_group = mn.VGroup(graph, graph_label)
-        table_group = mn.VGroup(adjacency_matrix, matrix_label)
+        self.graph_group = mn.VGroup(graph, graph_label)
+        self.adjacency_matrix_group = mn.VGroup(
+            adjacency_matrix, adjacency_matrix_label
+        )
 
         # Arrange graph and table side by side
-        combined_group = mn.VGroup(graph_group, table_group).arrange(mn.RIGHT, buff=3)
+        combined_group = mn.VGroup(
+            self.graph_group, self.adjacency_matrix_group
+        ).arrange(mn.RIGHT, buff=3)
         combined_group.move_to(mn.ORIGIN)
 
         # Style the table
@@ -51,7 +77,9 @@ class AdjacencyMatrix(mn.Scene):
         # Animation sequence
         self.play(mn.Create(graph), mn.Write(graph_label), run_time=3)
         self.wait(3)
-        self.play(mn.Create(adjacency_matrix), mn.Write(matrix_label), run_time=4)
+        self.play(
+            mn.Create(adjacency_matrix), mn.Write(adjacency_matrix_label), run_time=4
+        )
         self.wait(2)
 
         # Animate transfer of node labels to matrix
@@ -88,6 +116,8 @@ class AdjacencyMatrix(mn.Scene):
             )
 
             # Replace the old cell with the new one in the table
+            adjacency_matrix.get_entries()[4 * i + 1 + i] = new_text_vertical
+            adjacency_matrix.get_entries()[i + 1] = new_text_horizon
             # table.get_entries()[4 * i + 1] = new_text_horizon
 
             self.wait(0.5)
@@ -128,14 +158,15 @@ class AdjacencyMatrix(mn.Scene):
             self.wait(2)
 
         # Calculate the vertical shift needed to align the tops of the labels
-        vertical_shift = matrix_label.get_top()[1] - graph_label.get_top()[1]
+        vertical_shift = adjacency_matrix_label.get_top()[1] - graph_label.get_top()[1]
 
         # Animate the graph group moving up
-        self.play(graph_group.animate.shift(mn.UP * vertical_shift), run_time=2)
+        self.play(self.graph_group.animate.shift(mn.UP * vertical_shift), run_time=2)
         self.wait(1)
 
         # make node features appear next to nodes
         FEATURE_DIMENSION = 5
+        np.random.seed(0)  # Set the seed for reproducibility for the example purposes
         node_features = np.random.randint(
             0, 100, size=(len(graph.vertices), FEATURE_DIMENSION)
         )
@@ -157,23 +188,24 @@ class AdjacencyMatrix(mn.Scene):
             )
 
         every_element = mn.Group(*self.mobjects)
+        top_edge = self.camera.frame_height / 2
+        group_top = every_element[2].get_top()
+        shift_amount = top_edge - group_top - 0.5
+
         self.play(
-            every_element.animate.shift(
-                mn.UP * (mn.config.frame_height / 2 - every_element.get_top()[1] - 0.5)
-            ),
+            every_element.animate.shift(mn.UP * shift_amount),
             run_time=2,
         )
         self.wait(2)
 
         # transform the feature tables into the matrix
-        feature_table = mn.DecimalTable(
+        feature_table = mn.Matrix(
             node_features.tolist(),
-            include_outer_lines=True,
         ).scale(0.4)
 
         # Add a label to the new feature table
         feature_table_label = (
-            mn.Text("Node Features").next_to(graph, mn.DOWN, buff=0.5).scale(0.6)
+            mn.MathTex("Node Features").next_to(graph, mn.DOWN, buff=0.5).scale(0.6)
         )
 
         # Position the new feature table
@@ -188,18 +220,17 @@ class AdjacencyMatrix(mn.Scene):
         )
 
         # Add a label to the new feature table
-        feature_table_label = mn.Text("Node Features (X)").next_to(
+        feature_table_label = mn.MathTex("Node Features (X)").next_to(
             feature_table, mn.UP, buff=0.5
         )
         self.play(mn.Write(feature_table_label), run_time=1)
+        self.feature_matrix_group = mn.VGroup(feature_table, feature_table_label)
 
         self.wait(2)
 
         new_matrix = [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
-        new_adjacency_matrix = mn.DecimalTable(
+        new_adjacency_matrix = mn.Matrix(
             new_matrix,
-            include_outer_lines=True,
-            element_to_mobject_config={"num_decimal_places": 0},
         )
         scale_factor = feature_table.height / new_adjacency_matrix.height
 
@@ -215,8 +246,11 @@ class AdjacencyMatrix(mn.Scene):
             run_time=2,
         )
         new_adjacency_matrix.scale(scale_factor)
-        new_adjacency_matrix.next_to(matrix_label, mn.DOWN, buff=0.5)
+        new_adjacency_matrix.next_to(adjacency_matrix_label, mn.DOWN, buff=0.5)
         self.adjacency_matrix = new_adjacency_matrix
+        self.adjacency_matrix_group = mn.VGroup(
+            new_adjacency_matrix, adjacency_matrix_label
+        )
         self.play(
             mn.FadeOut(adjacency_matrix),
             *[mn.FadeOut(text_label) for text_label in text_elements],
@@ -279,6 +313,7 @@ class AdjacencyMatrix(mn.Scene):
         self.show_matrix_transfer()
         self.show_degree_matrix()
         self.show_feature_aggregation_equation()
+        self.show_weights_matrix()
 
     def show_matrix_multiplication_equation(self):
         # Create the equation
@@ -327,7 +362,7 @@ class AdjacencyMatrix(mn.Scene):
             matrix_value = int(matrix_element.tex_string)
 
             old_entry = self.adjacency_matrix.get_entries()[i * 3 + i]
-            new_value = int(old_entry.get_value()) + matrix_value
+            new_value = int(old_entry.tex_string) + matrix_value
 
             new_element = old_entry.copy()
             new_element.become(mn.MathTex(str(new_value), color=mn.YELLOW))
@@ -358,7 +393,7 @@ class AdjacencyMatrix(mn.Scene):
 
         # Create a Manim matrix object
         degree_matrix_mobject = mn.Matrix(degrees).scale(0.8)
-        degree_matrix_label = mn.Text("Degree Matrix (D)")
+        degree_matrix_label = mn.MathTex("Degree Matrix (D)")
         degree_matrix_label.next_to(degree_matrix_mobject, mn.UP, buff=0.75)
 
         normalized_degree_matrix_mobject = mn.Matrix(
@@ -413,13 +448,74 @@ class AdjacencyMatrix(mn.Scene):
         )
         self.degree_matrix_group = nd_matrix_group
 
+        combined_group = mn.VGroup(
+            self.degree_matrix_group,
+            self.adjacency_matrix_group,
+            self.feature_matrix_group,
+        )
+        self.play(
+            combined_group[1].animate.scale(2),
+            combined_group[2].animate.scale(2),
+            combined_group.animate.arrange(mn.RIGHT, buff=1, aligned_edge=mn.UP)
+            .scale(0.8)
+            .to_edge(mn.UP, buff=0.5),
+        )
+
     def show_feature_aggregation_equation(self):
-        equation = mn.MathTex(r"H = D^{-\frac{1}{2}} \cdot A \cdot D^{-\frac{1}{2}}")
-        equation_label = mn.Text("Aggregated Features (H) Equation").scale(0.7)
+        equation = mn.MathTex(
+            r"H = D^{-\frac{1}{2}} \cdot A \cdot D^{-\frac{1}{2}}\cdot X"
+        )
+        equation_label = mn.MathTex("Aggregated Features (H) Equation").scale(0.7)
         equation_label.next_to(equation, mn.UP, buff=0.5)
         equation_group = mn.VGroup(equation, equation_label)
-        equation_group.next_to(self.adjacency_matrix, mn.DOWN, buff=1)
+        equation_group.next_to(self.adjacency_matrix, mn.DOWN, buff=2)
         self.play(mn.Write(equation_group), run_time=3)
+        self.equation_group = equation_group
+
+    def show_weights_matrix(self):
+        weights = [
+            [0.3, 0.5],
+            [0.7, 0.2],
+            [0.2, 0.1],
+        ]
+
+        weights_matrix = mn.Matrix(weights).scale(0.8)
+        weights_matrix_label = mn.MathTex("Weights Matrix (W)")
+        weights_matrix_label.next_to(weights_matrix, mn.UP, buff=0.75)
+
+        weights_matrix_group = (
+            mn.VGroup(weights_matrix, weights_matrix_label).next_to(
+                mn.ORIGIN,
+            )
+            # .scale(0.75)
+            .shift(mn.DOWN * 2)
+        )
+
+        combined_group = mn.VGroup(
+            self.equation_group,
+            weights_matrix_group,
+        )
+        self.play(
+            combined_group.animate.arrange(mn.RIGHT, buff=1.5, aligned_edge=mn.ORIGIN)
+            .scale(0.8)
+            .shift(mn.DOWN),
+            run_time=1,
+        )
+
+        # Add dot W to the equation
+        new_equation = mn.MathTex(
+            r"H = D^{-\frac{1}{2}} \cdot A \cdot D^{-\frac{1}{2}}\cdot X \cdot W"
+        )
+        new_equation.move_to(self.equation_group[0])
+
+        self.play(
+            mn.TransformMatchingTex(self.equation_group[0], new_equation), run_time=2
+        )
+
+        # Update the equation_group with the new equation
+        self.equation_group[0] = new_equation
+
+        self.wait(2)
 
     def highlight_cell(self, table, row, col, color):
         cell = table.get_cell((row, col))
