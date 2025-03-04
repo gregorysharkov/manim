@@ -3,7 +3,8 @@ import numpy as np
 
 
 class AdjacencyMatrix(mn.Scene):
-
+    debug: bool = False  # Set debug to False to disable debugging features
+    
     def setup(self):
         self.camera.background_color = mn.DARK_BLUE
 
@@ -50,8 +51,10 @@ class AdjacencyMatrix(mn.Scene):
             layout={"0": mn.LEFT * 2, "1": mn.ORIGIN, "2": mn.RIGHT * 2},
             vertex_config={"fill_color": mn.GREEN, "stroke_color": mn.BLACK},
         ).scale(0.8)
+        
         self.graph_label = mn.MathTex("Graph (G)").next_to(self.graph, mn.UP, buff=0.5)
         self.graph_group = mn.VGroup(self.graph, self.graph_label)
+        
         self.play(mn.Create(self.graph), mn.Write(self.graph_label), run_time=3)
         self.wait(3)
 
@@ -105,29 +108,26 @@ class AdjacencyMatrix(mn.Scene):
             target_cell_horizon = target_row_horizon[0]
             new_text_horizon = mn.Text(str(i), color=mn.GREEN_C).scale(0.6)
             self.text_elements.append(new_text_horizon)
+            # self.adjacency_matrix.get_entries()[4 * i + 1 + i] = new_text_horizon
 
             vertical_cell_copy = self.graph.vertices[vertex].copy()
             target_cell_vertical = self.adjacency_matrix.get_rows()[0][i + 1]
             new_text_vertical = mn.Text(str(i), color=mn.GREEN_B).scale(0.6)
             self.text_elements.append(new_text_vertical)
-
+            # self.adjacency_matrix.get_entries()[i + 1] = new_text_vertical
             # Animate the transfer
             self.play(
                 horizon_cell_copy.animate.set_color(mn.GREEN_C),
+                vertical_cell_copy.animate.set_color(mn.GREEN_B),
                 mn.ReplacementTransform(
                     horizon_cell_copy, new_text_horizon.move_to(target_cell_horizon)
                 ),
-                mn.FadeOut(target_cell_horizon),
-                run_time=2,
-            )
-
-            self.play(
-                vertical_cell_copy.animate.set_color(mn.GREEN_B),
                 mn.ReplacementTransform(
                     vertical_cell_copy, new_text_vertical.move_to(target_cell_vertical)
                 ),
+                mn.FadeOut(target_cell_horizon),
                 mn.FadeOut(target_cell_vertical),
-                run_time=2,
+                run_time=3,
             )
 
             # Replace the old cell with the new one in the table
@@ -138,6 +138,11 @@ class AdjacencyMatrix(mn.Scene):
 
     def process_edges(self):
         edges = [("0", "1"), ("1", "2")]  # Use strings instead of integers
+        
+        # Initialize additional_text_elements if not already created
+        if not hasattr(self, 'additional_text_elements'):
+            self.additional_text_elements = []
+            
         for u, v in edges:
             # Highlight the edge in the graph
             edge = self.graph.edges[(u, v)]
@@ -155,6 +160,9 @@ class AdjacencyMatrix(mn.Scene):
 
             new_text_uv = mn.Text("1", color=mn.YELLOW).scale(0.6)
             new_text_vu = mn.Text("1", color=mn.YELLOW).scale(0.6)
+            
+            # Track these new text elements for later cleanup
+            self.additional_text_elements.extend([new_text_uv, new_text_vu])
 
             # Animate the edge copies moving and transforming into cells
             self.play(
@@ -200,7 +208,7 @@ class AdjacencyMatrix(mn.Scene):
             )
 
         every_element = mn.Group(*self.mobjects)
-        top_edge = self.camera.frame_height / 2
+        top_edge = self.camera.frame_height / 3
         group_top = every_element[2].get_top()
         shift_amount = top_edge - group_top - 0.5
 
@@ -221,7 +229,7 @@ class AdjacencyMatrix(mn.Scene):
         )
 
         # Group the feature matrix and its label
-        self.feature_matrix_group = mn.VGroup(self.feature_matrix, feature_matrix_label)
+        self.feature_matrix_group = mn.VGroup(self.feature_matrix, feature_matrix_label).next_to(self.graph_group, mn.DOWN, buff=.5)
 
         # Animate the transformation
         self.play(
@@ -238,25 +246,81 @@ class AdjacencyMatrix(mn.Scene):
         new_adjacency_matrix = mn.Matrix(new_matrix)
         scale_factor = self.feature_matrix.height / new_adjacency_matrix.height
 
-        # Hide the graph and its label
-        # Move the feature table and its label to the top left
+        # Calculate a more moderate shift for the feature matrix
+        target_shift = mn.UP * (mn.config.frame_height / 6)
+
+        # Take a "snapshot" of all current objects in the scene before removing anything
+        # This will help us identify new artifacts that appear later
+        current_objects = [obj for obj in self.mobjects]
+
+        # Move feature matrix up and fade out graph
         self.play(
-            self.feature_matrix_group.animate.shift(
-                mn.UP * (mn.config.frame_height / 2 - self.feature_matrix_group[1].get_top()[1] - 0.5)
-            ),
+            self.feature_matrix_group.animate.shift(target_shift),
             mn.FadeOut(self.graph),
             mn.FadeOut(self.graph_label),
             run_time=2,
         )
+        
+        # Scale and position the new adjacency matrix
         new_adjacency_matrix.scale(scale_factor)
-        new_adjacency_matrix.next_to(self.adjacency_matrix_label, mn.DOWN, buff=0.5)
+        
+        # Update the adjacency matrix label position
+        self.adjacency_matrix_label.next_to(new_adjacency_matrix, mn.UP, buff=0.5)
+        
+        # Store the old adjacency matrix group before replacing it
+        old_adjacency_matrix_group = self.adjacency_matrix_group
+        
+        # Create the new matrix 
         self.adjacency_matrix = new_adjacency_matrix
         self.adjacency_matrix_group = mn.VGroup(
             new_adjacency_matrix, self.adjacency_matrix_label
-        )
+        ).next_to(self.feature_matrix_group, mn.RIGHT, buff=2)
+        
+        # First, animate the fadeout of the old matrix
         self.play(
-            mn.FadeOut(self.adjacency_matrix),
-            *[mn.FadeOut(text_label) for text_label in self.text_elements],
+            mn.FadeOut(old_adjacency_matrix_group),
+            run_time=1.5
+        )
+        
+        # Now after fading out, actually remove the old matrix from the scene
+        self.remove(old_adjacency_matrix_group)
+        
+        # Remove all individual elements that might cause artifacts
+        if hasattr(self, 'text_elements') and self.text_elements:
+            for text in self.text_elements:
+                self.remove(text)
+            self.text_elements.clear()
+        
+        if hasattr(self, 'additional_text_elements') and self.additional_text_elements:
+            for text in self.additional_text_elements:
+                self.remove(text)
+            self.additional_text_elements.clear()
+        
+        # Remove any zero or one text objects that might be artifacts
+        # This is a more targeted approach to remove specific artifacts
+        for mobject in self.mobjects.copy():
+            if mobject not in current_objects:
+                continue  # Skip objects that were added after we started
+                
+            if isinstance(mobject, mn.Text) or isinstance(mobject, mn.MathTex):
+                # Don't remove the new matrix or its elements
+                if mobject in new_adjacency_matrix.get_family() or mobject in [self.adjacency_matrix_label, self.feature_matrix_group[1]]:
+                    continue
+                
+                # Only target potential artifacts - specifically those with values "0" or "1"
+                if (hasattr(mobject, 'tex_string') and mobject.tex_string in ["0", "1"]) or \
+                   (hasattr(mobject, 'text') and mobject.text in ["0", "1"]):
+                    # Remove the mobject
+                    self.remove(mobject)
+                # Also remove any objects positioned outside the normal matrix region
+                elif mobject.get_center()[0] > self.adjacency_matrix_group.get_right()[0] - 1:
+                    self.remove(mobject)
+        
+        # Now add the new matrix to the scene
+        self.add(self.adjacency_matrix_group)
+        
+        # Fade in the new matrix
+        self.play(
             mn.FadeIn(new_adjacency_matrix),
             run_time=2,
         )
