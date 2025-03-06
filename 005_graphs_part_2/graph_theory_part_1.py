@@ -116,6 +116,10 @@ class AdjacencyMatrix(mn.Scene):
             self.text_elements.append(new_text_vertical)
             # self.adjacency_matrix.get_entries()[i + 1] = new_text_vertical
             # Animate the transfer
+            # Replace the old cell with the new one in the table
+            self.adjacency_matrix.get_entries()[4 * i + 1 + i] = new_text_vertical
+            self.adjacency_matrix.get_entries()[i + 1] = new_text_horizon
+
             self.play(
                 horizon_cell_copy.animate.set_color(mn.GREEN_C),
                 vertical_cell_copy.animate.set_color(mn.GREEN_B),
@@ -129,10 +133,6 @@ class AdjacencyMatrix(mn.Scene):
                 mn.FadeOut(target_cell_vertical),
                 run_time=3,
             )
-
-            # Replace the old cell with the new one in the table
-            self.adjacency_matrix.get_entries()[4 * i + 1 + i] = new_text_vertical
-            self.adjacency_matrix.get_entries()[i + 1] = new_text_horizon
 
             self.wait(0.5)
 
