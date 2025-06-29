@@ -94,9 +94,9 @@ class GreedyVsBeamSearch(mn.Scene):
 
         # Add "cat" and "dog" tokens
         beam_cat_token = self.create_token_bubble("cat", mn.BLUE)
-        beam_cat_token.next_to(beam_the_token, mn.DOWN, buff=0.5).shift(mn.LEFT * 1)
+        beam_cat_token.next_to(beam_the_token, mn.DOWN, buff=0.5).shift(mn.LEFT * 1.5)
         beam_dog_token = self.create_token_bubble("dog", mn.GREEN)
-        beam_dog_token.next_to(beam_the_token, mn.DOWN, buff=0.5).shift(mn.RIGHT * 1)
+        beam_dog_token.next_to(beam_the_token, mn.DOWN, buff=0.5).shift(mn.RIGHT * 1.5)
         beam_tokens.extend([beam_cat_token, beam_dog_token])
 
         # Create paths from "The" to both tokens
@@ -136,21 +136,25 @@ class GreedyVsBeamSearch(mn.Scene):
         self.play(*[mn.Create(path) for path in beam_paths[2:]], *[mn.FadeIn(token) for token in beam_tokens[3:]])
         self.wait()
 
-        # Fade out less probable paths
-        paths_to_fade = beam_paths[3:]  # Keep only the first two paths
-        tokens_to_fade = beam_tokens[4:]  # Keep only the first three tokens
+        old_group = mn.VGroup(beam_the_token, beam_tokens, beam_paths)
 
-        self.play(
-            *[mn.FadeOut(path, opacity=0.3) for path in paths_to_fade],
-            *[mn.FadeOut(token, opacity=0.3) for token in tokens_to_fade],
+
+        final_tokens = mn.VGroup(beam_the_token, beam_dog_token, beam_played_token).arrange(mn.DOWN, buff=0.5)
+        final_path = self.create_path(beam_the_token.get_bottom(), beam_dog_token.get_top(), mn.WHITE)
+        final_path2 = self.create_path(beam_dog_token.get_bottom(), beam_played_token.get_top(), mn.GREEN)
+
+        final_group = (
+            mn.VGroup(
+                final_tokens,
+                final_path,
+                final_path2,
+            )
+            .next_to(beam_label, mn.DOWN, buff=0.5)
         )
+
+        self.play(mn.Transform(old_group, final_group))
         self.wait()
 
-        # Add final comparison text
-        comparison_text = mn.Text("Beam Search: More Coherent, Natural Outputs", font_size=36).to_edge(mn.DOWN)
-
-        self.play(mn.Write(comparison_text))
-        self.wait(2)
 
 
 if __name__ == "__main__":
