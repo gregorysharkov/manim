@@ -32,20 +32,22 @@ class LLMInterviewIntro(mn.Scene):
     def construct(self):
         # Question text - positioned first to determine alignment
         question_text = mn.Text(
-            "Question:\nWhat are embeddings,\nand how are they\ninitialized in LLMs?",
-            font_size=48,
+            "Question:\nHow do top-k and top-p sampling\ndiffer in text generation?",
+            font_size=40,  # Reduced from 48
             color=mn.YELLOW,
             line_spacing=1.3,
         )
         question_text.move_to([0, -4, 0])
 
         # Main title - aligned with question text
-        main_title = mn.Text("50 LLM Interview\nQuestions", font_size=48, color=mn.YELLOW, line_spacing=1.2)
+        main_title = mn.Text(
+            "50 LLM Interview\nQuestions", font_size=40, color=mn.YELLOW, line_spacing=1.2
+        )  # Reduced from 48
         main_title.align_to(question_text, mn.LEFT)
         main_title.move_to([main_title.get_x(), 4, 0])
 
         # Part number - aligned with question text
-        part_text = mn.Text("Part 10", font_size=48, color=mn.YELLOW)
+        part_text = mn.Text("Part 12", font_size=40, color=mn.YELLOW)  # Reduced from 48
         part_text.align_to(question_text, mn.LEFT)
         part_text.move_to([part_text.get_x(), 0, 0])
 
